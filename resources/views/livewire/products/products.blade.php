@@ -3,18 +3,35 @@
 @endphp
 
 <section class="bg-white px-4 py-6 max-w-6xl mx-auto space-y-8">
+    <!-- Popup pentru mesaje -->
+    @if (session()->has('message'))
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 max-w-md w-11/12 text-center shadow-2xl">
+                <div class="mb-4">
+                    <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Succes!</h3>
+                    <p class="text-gray-600">{{ session('message') }}</p>
+                </div>
+                <button
+                    onclick="this.closest('.fixed').style.display='none'"
+                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+    @endif
+
     <!-- Formular + ultimele 5 produse -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="col-span-2 flex items-center justify-center bg-white p-6 rounded-2xl shadow-lg">
             <div class="w-full max-w-md">
-                <h2 class="text-3xl font-bold text-gray-900 mb-3 text-center">TapLaMasa</h2>
+                <h2 class="text-3xl font-bold text-gray-900 mb-3 text-center">Adauga Produs</h2>
                 <p class="text-gray-600 mb-4 text-center">Gestionează produsele restaurantului tău</p>
-
-                @if (session()->has('message'))
-                    <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-                        {{ session('message') }}
-                    </div>
-                @endif
 
                 <form wire:submit.prevent="addProduct" class="space-y-5">
                     <div>
@@ -27,6 +44,21 @@
                             required
                             class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                         />
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-900 font-semibold mb-1" for="typeId">Tip Produs</label>
+                        <select
+                            id="typeId"
+                            wire:model="typeId"
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                        >
+                            <option value="">Selectează tipul produsului</option>
+                            @foreach($productTypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->type }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
@@ -98,6 +130,96 @@
         </div>
     </div>
 
+    <!-- Secțiunea pentru Meniul Zilei -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">Meniul Zilei</h3>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1">
+                <h4 class="font-semibold text-gray-700 mb-3">Selectează ziua:</h4>
+                <div class="space-y-2">
+                    @foreach(['luni', 'marti', 'miercuri', 'joi', 'vineri'] as $day)
+                        <button
+                            wire:click="selectDay('{{ $day }}')"
+                            class="w-full text-left px-4 py-3 rounded-md transition {{ $selectedDay === $day ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                        >
+                            {{ ucfirst($day) }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+            <div class="lg:col-span-2">
+                <h4 class="font-semibold text-gray-700 mb-3">Meniul pentru {{ ucfirst($selectedDay) }}:</h4>
+
+                <form wire:submit.prevent="updateDailyMenu" class="space-y-4">
+                    <!-- Preț -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Preț (Lei)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            wire:model="menuPrice"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="Introdu prețul"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Felul 1</label>
+                        <textarea
+                            wire:model="menuItem1"
+                            rows="2"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                            placeholder="Ex: 01.Supă cu tăiței de casa 250ml sau Ciorbă de vacuță 250ml/20g"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Felul 2</label>
+                        <textarea
+                            wire:model="menuItem2"
+                            rows="2"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                            placeholder="Ex: 02.Mâncare de cartofi cu piept de porc 150g/80g"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-1">Felul 3</label>
+                        <textarea
+                            wire:model="menuItem3"
+                            rows="2"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                            placeholder="Ex: 03.Salată de ardei copti 80g"
+                        ></textarea>
+                    </div>
+
+                    <!-- Buton de salvare -->
+                    <button
+                        type="submit"
+                        class="w-full py-3 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    >
+                        Actualizează Meniul pentru {{ ucfirst($selectedDay) }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtru pentru galeria de produse -->
+    <div class="mb-6">
+        <label class="block text-gray-900 font-semibold mb-2">Filtrează după tip:</label>
+        <select wire:change="filterProducts($event.target.value)" class="px-4 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
+            <option value="all">Toate produsele</option>
+            @foreach($productTypes as $type)
+                <option value="{{ $type->id }}">{{ $type->type }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <!-- Galeria de produse (aici afișezi $products) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach($products as $product)
+            <!-- Card-ul produsului -->
+        @endforeach
+    </div>
     <!-- Galerie Produse -->
     <div class="bg-white p-6 rounded-2xl shadow-lg overflow-auto max-h-[600px]">
         <h3 class="text-2xl font-bold text-gray-900 mb-4">Galerie Produse</h3>

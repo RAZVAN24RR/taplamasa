@@ -12,7 +12,7 @@
     <div class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-4xl">
         T
     </div>
-    <h1 class="text-4xl font-extrabold text-gray-900 mt-2">TapLaMasa</h1>
+    <h1 class="text-4xl font-extrabold text-gray-900 mt-2">TapLaMasa CAMBERA</h1>
     <p class="text-xl text-gray-600 mt-0.5">Gestionare Produse Restaurant</p>
     <p>Bun venit, {{ auth()->user()->name }}!</p>
     <div class="w-24 h-1 bg-orange-500 rounded-full mt-3"></div>

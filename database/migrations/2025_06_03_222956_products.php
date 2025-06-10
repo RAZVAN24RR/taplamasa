@@ -15,7 +15,8 @@ return new class extends Migration
             $product->boolean('busy');
             $product->timestamps();
             $product->integer('locationId');
-            $product->text('description')->nullable()->change();
+            $product->text('description')->nullable();
+            $product->integer('typeId');
         });
     }
 
