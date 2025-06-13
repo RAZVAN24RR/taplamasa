@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $product){
             $product->increments('id');
             $product->string('name');
-            $product->integer('price');
+            $product->string('price');
             $product->boolean('busy');
             $product->timestamps();
             $product->integer('locationId');

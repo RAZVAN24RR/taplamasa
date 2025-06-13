@@ -2,7 +2,45 @@
     use Illuminate\Support\Str;
 @endphp
 
-<section class="bg-white px-4 py-6 max-w-6xl mx-auto space-y-8">
+<section class="bg-white px-4 py-6 max-w-6xl mx-auto space-y-8 relative">
+    <!-- Loading Overlay -->
+    @if($isLoading)
+        <div class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16">
+                    <svg class="animate-spin h-16 w-16 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h3 class="mt-4 text-lg font-semibold text-gray-900">
+                    @switch($loadingAction)
+                        @case('adding')
+                            Adăugare produs...
+                            @break
+                        @case('deleting')
+                            Ștergere produs...
+                            @break
+                        @case('updating')
+                            Actualizare produs...
+                            @break
+                        @case('updating_price')
+                            Actualizare preț...
+                            @break
+                        @case('updating_description')
+                            Actualizare descriere...
+                            @break
+                        @case('updating_menu')
+                            Actualizare meniu...
+                            @break
+                        @default
+                            Se procesează...
+                    @endswitch
+                </h3>
+            </div>
+        </div>
+    @endif
+
     <!-- Popup pentru mesaje -->
     @if (session()->has('message'))
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -64,7 +102,7 @@
                     <div>
                         <label class="block text-gray-900 font-semibold mb-1" for="price">Preț (Lei)</label>
                         <input
-                            type="number"
+                            type="string"
                             id="price"
                             wire:model="price"
                             placeholder="Introdu prețul"
@@ -96,9 +134,11 @@
 
                     <button
                         type="submit"
-                        class="w-full py-3 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        class="w-full py-3 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        wire:loading.attr="disabled"
                     >
-                        Adaugă Produs
+                        <span wire:loading.remove wire:target="addProduct">Adaugă Produs</span>
+                        <span wire:loading wire:target="addProduct">Se adaugă...</span>
                     </button>
                 </form>
             </div>
@@ -194,9 +234,11 @@
                     <!-- Buton de salvare -->
                     <button
                         type="submit"
-                        class="w-full py-3 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        class="w-full py-3 bg-orange-500 text-white font-semibold rounded-md hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        wire:loading.attr="disabled"
                     >
-                        Actualizează Meniul pentru {{ ucfirst($selectedDay) }}
+                        <span wire:loading.remove wire:target="updateDailyMenu">Actualizează Meniul pentru {{ ucfirst($selectedDay) }}</span>
+                        <span wire:loading wire:target="updateDailyMenu">Se actualizează...</span>
                     </button>
                 </form>
             </div>
@@ -233,8 +275,10 @@
                             <p class="text-green-600 font-medium">{{ $product->price }} lei</p>
                             <button
                                 wire:click="openPriceModal({{ $product->id }})"
-                                class="px-3 py-1 text-sm font-semibold rounded bg-green-300 text-green-900 hover:bg-green-400 focus:outline-none"
+                                class="px-3 py-1 text-sm font-semibold rounded bg-green-300 text-green-900 hover:bg-green-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Editează prețul"
+                                wire:loading.attr="disabled"
+                                wire:target="updatePrice"
                             >
                                 Edit
                             </button>
@@ -247,12 +291,6 @@
                             @endif
                         </p>
 
-                        @if($product->busy)
-                            <span class="inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full mb-3">Indisponibil</span>
-                        @else
-                            <span class="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full mb-3">Disponibil</span>
-                        @endif
-
                         <button
                             wire:click="openDescriptionModal({{ $product->id }})"
                             class="w-full py-2 mb-2 text-orange-600 font-semibold hover:underline focus:outline-none"
@@ -261,22 +299,29 @@
                             Editeaza Descrierea
                         </button>
 
-                        <button
-                            wire:click="updateProduct({{ $product->id }})"
-                            class="w-full py-2 text-white rounded-md font-semibold focus:outline-none transition
-                            {{ $product->busy ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : 'bg-gray-400 hover:bg-gray-500 focus:ring-gray-700' }}"
-                            title="Actualizează starea produsului"
-                        >
-                            {{ $product->busy ? 'Marchează ca disponibil' : 'Marchează ca indisponibil' }}
-                        </button>
-                        <button
-                            wire:click="deleteProduct({{ $product->id }})"
-                            onclick="return confirm('Sigur vrei să ștergi acest produs?')"
-                            class="w-full py-2 mt-2 text-white bg-red-600 rounded-md font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
-                            title="Șterge produs"
-                        >
-                            Șterge
-                        </button>
+                        <div class="flex justify-between items-center mt-4">
+                            <button
+                                wire:click="updateProduct({{ $product->id }})"
+                                class="px-3 py-1 text-sm font-semibold rounded {{ $product->busy ? 'bg-red-300 text-red-900 hover:bg-red-400' : 'bg-green-300 text-green-900 hover:bg-green-400' }} focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                wire:loading.attr="disabled"
+                                wire:target="updateProduct"
+                            >
+                                <span wire:loading.remove wire:target="updateProduct">
+                                    {{ $product->busy ? 'Indisponibil' : 'Disponibil' }}
+                                </span>
+                                <span wire:loading wire:target="updateProduct">Se actualizează...</span>
+                            </button>
+
+                            <button
+                                wire:click="deleteProduct({{ $product->id }})"
+                                class="px-3 py-1 text-sm font-semibold rounded bg-red-300 text-red-900 hover:bg-red-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                wire:loading.attr="disabled"
+                                wire:target="deleteProduct"
+                            >
+                                <span wire:loading.remove wire:target="deleteProduct">Șterge</span>
+                                <span wire:loading wire:target="deleteProduct">Se șterge...</span>
+                            </button>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -288,28 +333,36 @@
     <!-- Modal Editare Descriere -->
     @if($showDescriptionModal)
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-8 w-11/12 max-w-3xl">
-                <h3 class="text-xl font-bold mb-4">Editare Descriere</h3>
-                <textarea
-                    wire:model.defer="modalDescription"
-                    rows="8"
-                    class="w-full border border-gray-300 rounded-md p-3 resize-none"
-                ></textarea>
-
-                <div class="mt-6 flex justify-end space-x-4">
-                    <button
-                        wire:click="$set('showDescriptionModal', false)"
-                        class="px-5 py-2 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none"
-                    >
-                        Anulează
-                    </button>
-                    <button
-                        wire:click="updateDescription"
-                        class="px-5 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 focus:outline-none"
-                    >
-                        Salvează
-                    </button>
-                </div>
+            <div class="bg-white rounded-lg p-8 max-w-md w-11/12">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Editează Descrierea</h3>
+                <form wire:submit.prevent="updateDescription">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-1">Descriere</label>
+                        <textarea
+                            wire:model="modalDescription"
+                            rows="4"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                            required
+                        ></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            wire:click="$set('showDescriptionModal', false)"
+                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none"
+                        >
+                            Anulează
+                        </button>
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                            wire:loading.attr="disabled"
+                        >
+                            <span wire:loading.remove>Salvează</span>
+                            <span wire:loading>Se salvează...</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif
@@ -317,30 +370,37 @@
     <!-- Modal Editare Preț -->
     @if($showPriceModal)
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-8 w-11/12 max-w-3xl">
-                <h3 class="text-xl font-bold mb-4">Editare Preț</h3>
-                <input
-                    type="number"
-                    wire:model.defer="modalPrice"
-                    class="w-full border border-gray-300 rounded-md p-3 mb-4"
-                    min="0"
-                    step="0.01"
-                />
-
-                <div class="flex justify-end space-x-4">
-                    <button
-                        wire:click="$set('showPriceModal', false)"
-                        class="px-5 py-2 bg-gray-300 rounded hover:bg-gray-400 focus:outline-none"
-                    >
-                        Anulează
-                    </button>
-                    <button
-                        wire:click="updatePrice"
-                        class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none"
-                    >
-                        Salvează
-                    </button>
-                </div>
+            <div class="bg-white rounded-lg p-8 max-w-md w-11/12">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Editează Prețul</h3>
+                <form wire:submit.prevent="updatePrice">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-1">Preț (Lei)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            wire:model="modalPrice"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            required
+                        />
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            wire:click="$set('showPriceModal', false)"
+                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none"
+                        >
+                            Anulează
+                        </button>
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                            wire:loading.attr="disabled"
+                        >
+                            <span wire:loading.remove>Salvează</span>
+                            <span wire:loading>Se salvează...</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif

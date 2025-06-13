@@ -34,6 +34,11 @@ class ProductManager extends Component
     public $menuItem2;
     public $menuItem3;
 
+    // Loading states
+    public $isLoading = false;
+    public $loadingAction = '';
+    public $loadingProductId = null;
+
     public function mount()
     {
         $this->productTypes = ProductType::all();
@@ -73,23 +78,31 @@ class ProductManager extends Component
 
     public function updateDailyMenu()
     {
-        $this->validate([
-            'menuPrice' => 'required|numeric|min:0',
-            'menuItem1' => 'required|string',
-            'menuItem2' => 'required|string',
-            'menuItem3' => 'required|string',
-        ]);
-
-        if ($this->selectedMenu) {
-            $this->selectedMenu->update([
-                'price' => $this->menuPrice,
-                'item_1' => $this->menuItem1,
-                'item_2' => $this->menuItem2,
-                'item_3' => $this->menuItem3,
+        $this->isLoading = true;
+        $this->loadingAction = 'updating_menu';
+        
+        try {
+            $this->validate([
+                'menuPrice' => 'required|numeric|min:0',
+                'menuItem1' => 'required|string',
+                'menuItem2' => 'required|string',
+                'menuItem3' => 'required|string',
             ]);
 
-            session()->flash('message', 'Meniul pentru ' . $this->selectedDay . ' a fost actualizat cu succes!');
-            $this->loadDailyMenus();
+            if ($this->selectedMenu) {
+                $this->selectedMenu->update([
+                    'price' => $this->menuPrice,
+                    'item_1' => $this->menuItem1,
+                    'item_2' => $this->menuItem2,
+                    'item_3' => $this->menuItem3,
+                ]);
+
+                session()->flash('message', 'Meniul pentru ' . $this->selectedDay . ' a fost actualizat cu succes!');
+                $this->loadDailyMenus();
+            }
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
         }
     }
 
@@ -106,39 +119,66 @@ class ProductManager extends Component
 
     public function addProduct()
     {
-        Product::create([
-            'name' => $this->name,
-            'price' => $this->price,
-            'busy' => $this->busy,
-            'locationId' => Auth::id(),
-            'description' => $this->description,
-            'typeId' => $this->typeId
-        ]);
+        $this->isLoading = true;
+        $this->loadingAction = 'adding';
+        
+        try {
+            Product::create([
+                'name' => $this->name,
+                'price' => $this->price,
+                'busy' => $this->busy,
+                'locationId' => Auth::id(),
+                'description' => $this->description,
+                'typeId' => $this->typeId
+            ]);
 
-        $this->reset(['name', 'price', 'busy', 'description', 'typeId']);
-        session()->flash('message', 'Product added successfully.');
-        $this->loadProducts();
+            $this->reset(['name', 'price', 'busy', 'description', 'typeId']);
+            session()->flash('message', 'Product added successfully.');
+            $this->loadProducts();
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
+        }
     }
 
     public function deleteProduct($id)
     {
-        Product::destroy($id);
-        session()->flash('message', 'Product deleted successfully.');
-        $this->loadProducts();
+        $this->isLoading = true;
+        $this->loadingAction = 'deleting';
+        $this->loadingProductId = $id;
+        
+        try {
+            Product::destroy($id);
+            session()->flash('message', 'Product deleted successfully.');
+            $this->loadProducts();
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
+            $this->loadingProductId = null;
+        }
     }
 
     public function updateProduct($id)
     {
-        sleep(2);
-        $product = Product::find($id);
-        if($product){
-            $product->busy = !$product->busy;
-            $product->save();
-            session()->flash('message', 'Product updated successfully.');
-            $this->loadProducts();
-        }
-        else{
-            session()->flash('message', 'Product not found.');
+        $this->isLoading = true;
+        $this->loadingAction = 'updating';
+        $this->loadingProductId = $id;
+        
+        try {
+            $product = Product::find($id);
+            if($product){
+                $product->busy = !$product->busy;
+                $product->save();
+                session()->flash('message', 'Product updated successfully.');
+                $this->loadProducts();
+            }
+            else{
+                session()->flash('message', 'Product not found.');
+            }
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
+            $this->loadingProductId = null;
         }
     }
 
@@ -154,16 +194,26 @@ class ProductManager extends Component
 
     public function updatePrice()
     {
-        $product = Product::find($this->modalProductId);
-        if ($product) {
-            $product->price = $this->modalPrice;
-            $product->save();
-            session()->flash('message', 'Price updated successfully.');
-            $this->loadProducts();
-        } else {
-            session()->flash('message', 'Product not found.');
+        $this->isLoading = true;
+        $this->loadingAction = 'updating_price';
+        $this->loadingProductId = $this->modalProductId;
+        
+        try {
+            $product = Product::find($this->modalProductId);
+            if ($product) {
+                $product->price = $this->modalPrice;
+                $product->save();
+                session()->flash('message', 'Price updated successfully.');
+                $this->loadProducts();
+            } else {
+                session()->flash('message', 'Product not found.');
+            }
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
+            $this->loadingProductId = null;
+            $this->showPriceModal = false;
         }
-        $this->showPriceModal = false;
     }
 
     public function openDescriptionModal($id)
@@ -178,16 +228,26 @@ class ProductManager extends Component
 
     public function updateDescription()
     {
-        $product = Product::find($this->modalProductId);
-        if ($product) {
-            $product->description = $this->modalDescription;
-            $product->save();
-            session()->flash('message', 'Description updated successfully.');
-            $this->loadProducts();
-        } else {
-            session()->flash('message', 'Product not found.');
+        $this->isLoading = true;
+        $this->loadingAction = 'updating_description';
+        $this->loadingProductId = $this->modalProductId;
+        
+        try {
+            $product = Product::find($this->modalProductId);
+            if ($product) {
+                $product->description = $this->modalDescription;
+                $product->save();
+                session()->flash('message', 'Description updated successfully.');
+                $this->loadProducts();
+            } else {
+                session()->flash('message', 'Product not found.');
+            }
+        } finally {
+            $this->isLoading = false;
+            $this->loadingAction = '';
+            $this->loadingProductId = null;
+            $this->showDescriptionModal = false;
         }
-        $this->showDescriptionModal = false;
     }
 
     public function render()
