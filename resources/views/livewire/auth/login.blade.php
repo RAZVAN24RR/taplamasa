@@ -36,10 +36,10 @@
                 @error('password') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div class="flex items-center space-x-2">
-                <input type="checkbox" id="remember" wire:model="remember" class="h-4 w-4 text-orange-500 rounded focus:ring-orange-400" />
-                <label for="remember" class="text-gray-700 text-sm select-none">Ține-mă minte</label>
-            </div>
+{{--            <div class="flex items-center space-x-2">--}}
+{{--                <input type="checkbox" id="remember" wire:model="remember" class="h-4 w-4 text-orange-500 rounded focus:ring-orange-400" />--}}
+{{--                <label for="remember" class="text-gray-700 text-sm select-none">Ține-mă minte</label>--}}
+{{--            </div>--}}
 
             <button
                 type="submit"
@@ -49,9 +49,9 @@
             </button>
         </form>
 
-        <p class="mt-6 text-center text-gray-600">
-            Nu ai cont?
-            <a href="/register" class="text-orange-500 font-semibold hover:underline">Înregistrează-te</a>
-        </p>
+{{--        <p class="mt-6 text-center text-gray-600">--}}
+{{--            Nu ai cont?--}}
+{{--            <a href="/register" class="text-orange-500 font-semibold hover:underline">Înregistrează-te</a>--}}
+{{--        </p>--}}
     </div>
 </section>
